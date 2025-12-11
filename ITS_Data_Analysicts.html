@@ -1,0 +1,585 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資料處理與分析 - 線上測試複習</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .option-btn {
+            transition: all 0.2s;
+        }
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="bg-blue-600 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2 cursor-pointer" onclick="showHome()">
+                <i class="fas fa-book-reader"></i>
+                資料分析題庫
+            </h1>
+            <button onclick="showHome()" class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded transition">
+                <i class="fas fa-home mr-1"></i> 回首頁
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="max-w-3xl mx-auto px-4 py-6">
+        
+        <!-- View: Home / Chapter Selection -->
+        <div id="home-view" class="fade-in">
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6 text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">歡迎回來複習！</h2>
+                <p class="text-gray-500">請選擇一個章節開始進行測試</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="chapter-list">
+                <!-- Chapters will be injected here by JS -->
+            </div>
+        </div>
+
+        <!-- View: Quiz -->
+        <div id="quiz-view" class="hidden fade-in">
+            <!-- Progress Bar -->
+            <div class="mb-6">
+                <div class="flex justify-between text-sm text-gray-500 mb-1">
+                    <span id="chapter-title-display" class="font-bold text-blue-600">CH01</span>
+                    <span id="progress-text">1 / 10</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 10%"></div>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="p-6 border-b border-gray-100">
+                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mb-3 font-semibold">單選題</span>
+                    <h3 id="question-text" class="text-xl font-bold text-gray-800 leading-relaxed">
+                        題目載入中...
+                    </h3>
+                </div>
+                
+                <div id="options-container" class="p-6 space-y-3 bg-gray-50">
+                    <!-- Options injected here -->
+                </div>
+
+                <!-- Feedback Area (Hidden initially) -->
+                <div id="feedback-area" class="hidden p-4 border-t border-gray-200 bg-yellow-50">
+                    <div class="flex items-start gap-3">
+                        <i id="feedback-icon" class="fas fa-info-circle mt-1 text-xl"></i>
+                        <div>
+                            <h4 id="feedback-title" class="font-bold text-lg">解析</h4>
+                            <p id="feedback-text" class="text-gray-700 mt-1"></p>
+                        </div>
+                    </div>
+                    <button onclick="nextQuestion()" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2">
+                        下一題 <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Results -->
+        <div id="result-view" class="hidden fade-in text-center">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <div class="w-24 h-24 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-trophy text-4xl text-blue-600"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">測驗完成！</h2>
+                <p class="text-gray-500 mb-6">您完成了 <span id="result-chapter-name"></span> 的練習</p>
+                
+                <div class="flex justify-center gap-8 mb-8">
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-blue-600" id="score-text">0</div>
+                        <div class="text-sm text-gray-500 uppercase tracking-wide">得分</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-green-600" id="correct-count">0</div>
+                        <div class="text-sm text-gray-500 uppercase tracking-wide">答對</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-red-500" id="wrong-count">0</div>
+                        <div class="text-sm text-gray-500 uppercase tracking-wide">答錯</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button onclick="restartQuiz()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg transition">
+                        <i class="fas fa-redo mr-2"></i> 再測一次
+                    </button>
+                    <button onclick="showHome()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition">
+                        <i class="fas fa-list mr-2"></i> 返回章節列表
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Data and Logic -->
+    <script>
+        // --- Quiz Data Extracted from PDF ---
+        const quizDatabase = {
+            "CH01": {
+                title: "CH01 資料處理與分析概論",
+                questions: [
+                    {
+                        q: "資料(Data)是什麼?",
+                        options: ["用來記錄特定現象的方式，可以是任何測量或保存的內容", "虛擬世界中的數據，與現實無關", "資料僅限於文字和數字", "資料只在科學領域中使用"],
+                        ans: 0
+                    },
+                    {
+                        q: "下列哪一項屬於量化資料?",
+                        options: ["性別", "產品名稱", "溫度", "顏色"],
+                        ans: 2
+                    },
+                    {
+                        q: "下列哪一種資料結構具有固定的行和列，便於進行資料檢索和分析?",
+                        options: ["非結構化資料", "半結構化資料", "結構化資料", "中繼資料"],
+                        ans: 2
+                    },
+                    {
+                        q: "下列哪一項屬於量化資料的特徵?",
+                        options: ["無法進行數學運算", "可以進行數值運算", "主要用來描述類別或特徵", "通常以文字形式表示"],
+                        ans: 1
+                    },
+                    {
+                        q: "在資料分析中，布林變數(Boolean) 通常表示什麼?",
+                        options: ["連續數據", "數字和文字的組合", "文字的長度", "真或假兩種狀態"],
+                        ans: 3
+                    }
+                ]
+            },
+            "CH02": {
+                title: "CH02 資料操作與ETL",
+                questions: [
+                    {
+                        q: "資料操作中的ETL流程包含哪些步驟?",
+                        options: ["提取、轉換、載入", "匯入、清理、分析", "收集、分析、展示", "匯入、載入、轉換"],
+                        ans: 0
+                    },
+                    {
+                        q: "在Python中，通常用於讀取JSON格式資料的套件是什麼?",
+                        options: ["os", "NumPy", "jsonlite", "json"],
+                        ans: 3
+                    },
+                    {
+                        q: "以下哪一個是R語言中用於資料清理的套件?",
+                        options: ["tidyr", "NumPy", "Matplotlib", "Seaborn"],
+                        ans: 0
+                    },
+                    {
+                        q: "CSV格式的主要優勢是什麼?",
+                        options: ["支持多層次結構", "輕量級且跨平台兼容性好", "文件體積較小且支持嵌套資料", "支持二進制資料"],
+                        ans: 1
+                    },
+                    {
+                        q: "資料分組主要是為了什麼?",
+                        options: ["提高計算的速度", "對資料進行分類和分析", "將資料儲存到外部文件中", "儲存資料的備份"],
+                        ans: 1
+                    },
+                    {
+                        q: "在進行數據ETL時，以下哪項不屬於Transform階段的工作?",
+                        options: ["資料清洗", "資料格式轉換", "從資料庫讀取原始數據", "數據聚合計算"],
+                        ans: 2
+                    },
+                    {
+                        q: "有一份包含學生各科成績的資料表，欄位包含：學號、科目、分數。若要製作一個新表格，將不同科目的分數分別顯示在不同欄位中，應該使用哪種操作?",
+                        options: ["反樞紐分析 (Unpivoting)", "樞紐分析 (Pivot)", "群組聚合 (Group By)", "交叉連接 (Cross Join)"],
+                        ans: 1
+                    },
+                    {
+                        q: "以下哪種情況最適合使用反樞紐分析 (Unpivoting)?",
+                        options: ["需要計算每個部門的平均薪資", "需要將月份欄位(1月、2月...)的銷售數據轉換為日期與銷售額的形式", "需要統計每個客戶的總消費金額", "需要計算不同產品在各區域的銷售佔比"],
+                        ans: 1
+                    },
+                    {
+                        q: "如果想要找到企鵝資料集中體重最重的前10隻企鵝，應該使用什麼樣的資料操作順序?",
+                        options: ["先篩選後排序", "先排序後篩選", "只需要篩選", "只需要排序"],
+                        ans: 1
+                    },
+                    {
+                        q: "下列哪個Python程式碼可以正確篩選出所有在Dream島且體重小於3000克的企鵝?",
+                        options: ["penguins_df[penguins_df['island'] == 'Dream' and ...]", "penguins_df[(penguins_df['island'] == 'Dream') & (penguins_df['body_mass_g'] < 3000)]", "使用 && 運算子", "語法錯誤的選項"],
+                        ans: 1
+                    }
+                ]
+            },
+            "CH03": {
+                title: "CH03 描述性與預測性分析",
+                questions: [
+                    {
+                        q: "描述性分析的主要目的是什麼?",
+                        options: ["預測未來趨勢", "分析資料中異常的原因", "總結資料的基本特徵", "提供具體的行動建議"],
+                        ans: 2
+                    },
+                    {
+                        q: "資料鑽取中，從匯總數據深入到細節層級的過程稱為什麼?",
+                        options: ["向上鑽取", "向下鑽取", "水平鑽取", "聚合鑽取"],
+                        ans: 1
+                    },
+                    {
+                        q: "哪一種分析方法最適合回答「應該做什麼?」的問題?",
+                        options: ["預測性分析", "描述性分析", "假設檢定", "規範性分析"],
+                        ans: 3
+                    },
+                    {
+                        q: "下列哪個指標最適合評估假陽性(False Positive)的情況?",
+                        options: ["準確率(Accuracy)", "精確率(Precision)", "召回率(Recall)", "F1分數(F1-Score)"],
+                        ans: 1
+                    },
+                    {
+                        q: "如果模型的召回率(Recall)為0.8，這表示:",
+                        options: ["80%的預測是正確的", "80%的陽性預測確實為陽性", "80%的實際陽性案例被正確預測", "模型整體準確度為80%"],
+                        ans: 2
+                    },
+                    {
+                        q: "比較 MAE 和 RMSE，下列哪項敘述正確?",
+                        options: ["MAE 總是大於 RMSE", "RMSE 較 MAE更敏感於極端值", "MAE 和 RMSE 的值總是相等", "RMSE 總是小於 MAE"],
+                        ans: 1
+                    },
+                    {
+                        q: "某電商平台使用兩個模型(A和B)。Model A的MAPE為3.2%，Model B的MAPE為9.8%，這表示:",
+                        options: ["Model A平均預測誤差為實際值的3.2%", "Model B的預測準確率為9.8%", "Model A比Model B的誤差大", "差異不顯著"],
+                        ans: 0
+                    },
+                    {
+                        q: "在電商銷售預測的情境中，為什麼MAPE可能是較好的評估指標?",
+                        options: ["考慮季節性", "比RMSE更敏感於離群值", "因為它不受銷售金額大小的影響(單位獨立)", "B和C都正確"],
+                        ans: 2
+                    },
+                    {
+                        q: "R-squared 值為0.95代表:",
+                        options: ["95%的因果關係", "模型可以解釋95%的資料變異", "預測準確率為95%", "95%的機會預測正確"],
+                        ans: 1
+                    }
+                ]
+            },
+            "CH04": {
+                title: "CH04 資料視覺化",
+                questions: [
+                    {
+                        q: "資料視覺化的主要目的之一是什麼?",
+                        options: ["增加資料的複雜性", "隱藏資料細節", "增加數據量", "簡化資料理解"],
+                        ans: 3
+                    },
+                    {
+                        q: "以下哪一種圖表最適合展示資料之間的趨勢?",
+                        options: ["圓餅圖", "桑基圖", "折線圖", "箱型圖"],
+                        ans: 2
+                    },
+                    {
+                        q: "以下哪一種圖表適合展示不同群體之間的組成結構?",
+                        options: ["折線圖", "散佈圖", "樹狀圖(TreeMap) / 堆疊圖", "面積圖"],
+                        ans: 2
+                    },
+                    {
+                        q: "哪一個是減少資料視覺化中誤解的有效方法?",
+                        options: ["增加3D效果", "清晰且準確的標籤", "使用複雜的顏色搭配", "不顯示資料單位"],
+                        ans: 1
+                    },
+                    {
+                        q: "當資料有自然的中心點(如零值)時，哪種色階適合用於展示資料的正負變化?",
+                        options: ["Sequencing 色階", "Diverging 色階", "Random 色階", "Constant 色階"],
+                        ans: 1
+                    },
+                    {
+                        q: "在建立折線圖(Line Chart)時，以下哪個變量最適合放在X軸?",
+                        options: ["時間序列數據", "類別型數據", "隨機數據", "二元數據"],
+                        ans: 0
+                    },
+                    {
+                        q: "熱圖(Heat Map)最適合用來表現什麼類型的數據?",
+                        options: ["時間序列數據", "相關性矩陣", "累積數據", "比例數據"],
+                        ans: 1
+                    },
+                    {
+                        q: "在資料視覺化中，使用顏色時應注意什麼?",
+                        options: ["盡可能使用多種顏色", "只使用暖色系", "考慮色盲使用者的可讀性", "避免使用對比色"],
+                        ans: 2
+                    }
+                ]
+            },
+            "CH05": {
+                title: "CH05 資料治理與倫理",
+                questions: [
+                    {
+                        q: "根據GDPR，以下何者不屬於「個人資料」的範疇?",
+                        options: ["電子郵件地址", "IP 位址", "公司統一編號", "生物特徵資料"],
+                        ans: 2
+                    },
+                    {
+                        q: "在處理敏感性個人資料時，以下哪種做法最符合資料最小化原則?",
+                        options: ["收集所有可能用到的資料", "只收集達成特定目的所需的最少資料", "定期更新所有資料", "永久保存所有資料"],
+                        ans: 1
+                    },
+                    {
+                        q: "關於資料偏誤(Data Bias)，下列敘述何者錯誤?",
+                        options: ["選擇偏誤可能導致樣本無法代表母體", "確認偏誤會影響解讀客觀性", "資料偏誤只存在於質化研究中", "測量偏誤可能來自不當方法"],
+                        ans: 2
+                    },
+                    {
+                        q: "在實施負責任的資料處理時，以下哪項做法是不正確的?",
+                        options: ["建立資料生命週期管理", "定期進行安全稽核", "將所有員工的存取權限設為最高級別", "實施資料分類"],
+                        ans: 2
+                    },
+                    {
+                        q: "在處理個人資料時，何謂「知情同意」?",
+                        options: ["默許同意", "清楚告知目的並取得明確同意", "由法律顧問決定", "蒐集即同意"],
+                        ans: 1
+                    },
+                    {
+                        q: "關於資料去識別化，下列何者正確?",
+                        options: ["去識別化可以降低但不能完全消除重新識別風險", "與匿名化完全相同", "一旦去識別化就永遠安全", "不需要保護"],
+                        ans: 0
+                    },
+                    {
+                        q: "避免偏誤的最佳做法是?",
+                        options: ["只報告有利結果", "完整呈現所有結果(含負面)", "修改不利結果", "忽略不顯著結果"],
+                        ans: 1
+                    },
+                    {
+                        q: "關於跨境資料傳輸，下列何者正確?",
+                        options: ["加密即可任意傳輸", "不同國家法規可能不同，需遵守", "不需要考慮當地法規", "全球法規一致"],
+                        ans: 1
+                    }
+                ]
+            },
+            "CH06": {
+                title: "CH06 模擬綜合題庫",
+                questions: [
+                    {
+                        q: "哪一個概念能最完整地描述資料在資料分析情境中的一般意義?",
+                        options: ["未經整理的事實", "有意義的統計", "經過分析的細節", "解讀過的證據"],
+                        ans: 0
+                    },
+                    {
+                        q: "哪一個句子能最準確地描述資料與統計之間的關聯性?",
+                        options: ["所有統計都是資料，但並非所有資料都是統計", "所有資料都是統計", "本質都是純粹量化的", "本質都是純粹質化的"],
+                        ans: 0
+                    },
+                    {
+                        q: "下列哪一種資料類型是處理條件陳述式所產生的結果?",
+                        options: ["布林值 (Boolean)", "字元", "整數", "字串"],
+                        ans: 0
+                    },
+                    {
+                        q: "下列哪一種資料結構能描述下列資料? ['Aabid', 'Jesenia', 'Mark']",
+                        options: ["清單 (List)", "資料表", "多維陣列", "圖表"],
+                        ans: 0
+                    },
+                    {
+                        q: "非結構化資料集與結構化資料集有何不同?",
+                        options: ["非結構化資料集可以儲存大量不相關/不同格式的資料", "非結構化搜尋更快", "非結構化組織已定義", "非結構化有預定義模型"],
+                        ans: 0
+                    },
+                    {
+                        q: "哪一種資料類型通常體積巨大，無法簡單儲存在傳統關聯式資料庫中?",
+                        options: ["巨量資料 (Big Data) / 非結構化大對象", "質化資料", "中繼資料", "推算資料"],
+                        ans: 0
+                    },
+                    {
+                        q: "若要製作一個顯示不同年度銷售額，且點擊年份可查看詳細資料的報表，這代表哪一種技術?",
+                        options: ["分類", "分佈", "取消樞紐", "樞紐分析 / 鑽取連結"],
+                        ans: 3
+                    },
+                    {
+                        q: "您需要比對列表中每個資料點的三個值(X, Y, 大小)。您應該使用哪一種圖表類型?",
+                        options: ["泡泡圖", "區域圖", "散佈圖", "瀑布圖"],
+                        ans: 0
+                    },
+                    {
+                        q: "行銷團隊想要知道哪個市場區隔去年銷售量最高。他們應該使用哪種資料分析類型?",
+                        options: ["描述性分析", "診斷分析", "預測性分析", "規範性分析"],
+                        ans: 0
+                    },
+                    {
+                        q: "使用 Alpha 值 5% (0.05) 執行 t 檢定，若 p 值 = 0.017。您可以得出什麼結論?",
+                        options: ["無法否定虛無假設", "應該否定虛無假設 (Reject H0)", "接受虛無假設", "資料不足"],
+                        ans: 1
+                    }
+                ]
+            }
+        };
+
+        // --- App State ---
+        let currentChapterKey = null;
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let userAnswers = []; // Store { qIndex, correct, userSelect, correctSelect }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderChapterList();
+        });
+
+        function renderChapterList() {
+            const container = document.getElementById('chapter-list');
+            container.innerHTML = '';
+            
+            Object.keys(quizDatabase).forEach(key => {
+                const chapter = quizDatabase[key];
+                const btn = document.createElement('div');
+                btn.className = "bg-white p-6 rounded-lg shadow border border-gray-100 cursor-pointer hover:shadow-md hover:border-blue-300 transition group";
+                btn.onclick = () => startQuiz(key);
+                btn.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition">
+                                <span class="font-bold text-lg">${key.replace('CH', '')}</span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-800">${chapter.title}</h3>
+                                <p class="text-sm text-gray-500">${chapter.questions.length} 題測驗</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300 group-hover:text-blue-500"></i>
+                    </div>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function showHome() {
+            document.getElementById('home-view').classList.remove('hidden');
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.add('hidden');
+        }
+
+        function startQuiz(chapterKey) {
+            currentChapterKey = chapterKey;
+            currentQuestions = [...quizDatabase[chapterKey].questions];
+            // Optional: Shuffle questions here if needed
+            currentQuestionIndex = 0;
+            score = 0;
+            userAnswers = [];
+
+            document.getElementById('chapter-title-display').innerText = quizDatabase[chapterKey].title;
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('result-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const qData = currentQuestions[currentQuestionIndex];
+            const total = currentQuestions.length;
+
+            // Update Progress
+            document.getElementById('progress-text').innerText = `${currentQuestionIndex + 1} / ${total}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestionIndex + 1) / total) * 100}%`;
+
+            // Update Text
+            document.getElementById('question-text').innerText = qData.q;
+            
+            // Reset UI
+            document.getElementById('feedback-area').classList.add('hidden');
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            // Generate Options
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full text-left p-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium relative";
+                btn.innerHTML = `<span class="inline-block w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-center text-sm leading-6 mr-3">${String.fromCharCode(65 + idx)}</span> ${opt}`;
+                btn.onclick = () => checkAnswer(idx, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex, btnElement) {
+            // Disable all buttons
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(b => b.disabled = true);
+
+            const qData = currentQuestions[currentQuestionIndex];
+            const isCorrect = selectedIndex === qData.ans;
+            
+            // Log answer
+            userAnswers.push({
+                qIndex: currentQuestionIndex,
+                isCorrect: isCorrect,
+                userSelect: selectedIndex,
+                correctSelect: qData.ans
+            });
+
+            if (isCorrect) {
+                score += 100 / currentQuestions.length; // Calculate relative score
+                btnElement.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                btnElement.querySelector('span').classList.add('bg-green-200', 'text-green-800');
+                showFeedback(true, "回答正確！");
+            } else {
+                btnElement.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                btnElement.querySelector('span').classList.add('bg-red-200', 'text-red-800');
+                
+                // Highlight correct answer
+                const correctBtn = buttons[qData.ans];
+                correctBtn.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                showFeedback(false, `正確答案是：${String.fromCharCode(65 + qData.ans)}`);
+            }
+        }
+
+        function showFeedback(isCorrect, text) {
+            const feedbackArea = document.getElementById('feedback-area');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackText = document.getElementById('feedback-text');
+            const feedbackIcon = document.getElementById('feedback-icon');
+
+            feedbackArea.classList.remove('hidden', 'bg-green-50', 'bg-red-50');
+            feedbackArea.classList.add(isCorrect ? 'bg-green-50' : 'bg-red-50');
+            
+            feedbackIcon.className = isCorrect ? "fas fa-check-circle mt-1 text-xl text-green-600" : "fas fa-times-circle mt-1 text-xl text-red-600";
+            feedbackTitle.innerText = isCorrect ? "太棒了！" : "再接再厲";
+            feedbackTitle.className = isCorrect ? "font-bold text-lg text-green-800" : "font-bold text-lg text-red-800";
+            feedbackText.innerText = text;
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentQuestions.length) {
+                renderQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.remove('hidden');
+
+            const correctCount = userAnswers.filter(a => a.isCorrect).length;
+            const finalScore = Math.round((correctCount / currentQuestions.length) * 100);
+
+            document.getElementById('result-chapter-name').innerText = quizDatabase[currentChapterKey].title;
+            document.getElementById('score-text').innerText = finalScore;
+            document.getElementById('correct-count').innerText = correctCount;
+            document.getElementById('wrong-count').innerText = currentQuestions.length - correctCount;
+        }
+
+        function restartQuiz() {
+            startQuiz(currentChapterKey);
+        }
+    </script>
+</body>
+</html>
